@@ -1,37 +1,432 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-  <title>Doctor</title>
-  <link rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard - Health Care System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fc;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #16a085 0%, #2ecc71 100%);
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            border-radius: 1rem;
+        }
+
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 1.5rem;
+            border-top-left-radius: 1rem !important;
+            border-top-right-radius: 1rem !important;
+        }
+
+        .form-control {
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            background-color: #f8f9fc;
+            border: 1px solid #d1d3e2;
+        }
+
+        .form-control:focus {
+            background-color: white;
+        }
+
+        .btn-primary {
+            background-color: #2c3e50;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem;
+        }
+
+        .btn-info {
+            color: white;
+            background-color: #2980b9;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem;
+        }
+
+        .patient-info-box {
+            background: #ecf0f1;
+            border-left: 4px solid #3498db;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+    </style>
 </head>
-<body class="container mt-5">
-  <h3>Add Medical Record</h3>
 
-  <input id="hid" class="form-control mb-2" placeholder="Health ID">
-  <input id="diag" class="form-control mb-2" placeholder="Diagnosis">
-  <input id="pres" class="form-control mb-2" placeholder="Prescription">
-  <input id="date" type="date" class="form-control mb-2">
+<body>
+    <nav class="navbar navbar-expand navbar-dark mb-4 shadow">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#" data-i18n="welcome_doctor">Doctor Dashboard</a>
+            <div class="ms-auto">
+                <a href="/" class="btn btn-outline-light btn-sm px-4" data-i18n="logout">Logout</a>
+            </div>
+        </div>
+    </nav>
 
-  <button class="btn btn-primary" onclick="add()">Submit</button>
+    <div class="container">
+        <div class="row">
+            <!-- Left Column: Patient Lookup -->
+            <div class="col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h6 class="m-0 font-weight-bold text-primary" data-i18n="patient_lookup">Patient Lookup</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small">HEALTH ID</label>
+                            <div class="input-group">
+                                <input type="text" id="hid-search" class="form-control" placeholder="HID-...">
+                                <button class="btn btn-info" onclick="fetchPatient()"
+                                    data-i18n="fetch_btn">Fetch</button>
+                            </div>
+                        </div>
 
-  <p id="msg" class="mt-3"></p>
+                        <div id="patient-details" class="d-none">
+                            <div class="patient-info-box mb-3">
+                                <h5 class="mb-1" id="p-name"></h5>
+                                <div class="small text-secondary">
+                                    <span id="p-phone"></span> | <span id="p-lang"
+                                        class="text-uppercase badge bg-secondary"></span>
+                                </div>
+                            </div>
 
-<script>
-function add() {
-  fetch("http://127.0.0.1:5000/doctor/add_record", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({
-      health_id: hid.value,
-      diagnosis: diag.value,
-      prescription: pres.value,
-      next_visit: date.value
-    })
-  })
-  .then(r=>r.json())
-  .then(d=> msg.innerText = "Record added successfully");
-}
-</script>
+                            <button class="btn btn-outline-primary w-100 mb-3" data-bs-toggle="modal"
+                                data-bs-target="#historyModal">
+                                View Previous Reports
+                            </button>
+
+                            <h6 class="text-secondary small mt-4 mb-2" data-i18n="recent_history">RECENT HISTORY</h6>
+                            <div id="history-list" class="list-group list-group-flush small overflow-auto"
+                                style="max-height: 200px;">
+                                <!-- History items -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Create Records & Reports -->
+            <div class="col-lg-8 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                            <li class="nav-item">
+                                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#visit"
+                                    data-i18n="add_record">Add Medical Record</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#report"
+                                    data-i18n="create_report">Create Medical Report</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content">
+                            <!-- Standard Visit Record -->
+                            <div class="tab-pane fade show active" id="visit" role="tabpanel">
+                                <div class="alert alert-warning small d-none" id="no-patient-alert">
+                                    Please fetch a patient first or enter Health ID manually below.
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-secondary small">HEALTH ID</label>
+                                        <input type="text" id="hid" class="form-control" placeholder="HID-...">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-secondary small" data-i18n="next_visit">NEXT
+                                            VISIT</label>
+                                        <input type="date" id="date" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-secondary small"
+                                        data-i18n="diagnosis">DIAGNOSIS</label>
+                                    <textarea id="diag" class="form-control" rows="2" data-i18n="diagnosis"
+                                        placeholder="Diagnosis..."></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-secondary small"
+                                        data-i18n="prescription">PRESCRIPTION</label>
+                                    <textarea id="pres" class="form-control" rows="2" data-i18n="prescription"
+                                        placeholder="Prescription..."></textarea>
+                                </div>
+                                <button onclick="submitRecord('visit')" class="btn btn-primary w-100 shadow-sm mt-2"
+                                    data-i18n="save_record">
+                                    Save Medical Record
+                                </button>
+                            </div>
+
+                            <!-- Detailed Medical Report (New Feature) -->
+                            <div class="tab-pane fade" id="report" role="tabpanel">
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label text-secondary small" data-i18n="blood_group">BLOOD
+                                            GROUP</label>
+                                        <select id="rep-blood" class="form-select">
+                                            <option value="">Select</option>
+                                            <option>A+</option>
+                                            <option>A-</option>
+                                            <option>B+</option>
+                                            <option>B-</option>
+                                            <option>O+</option>
+                                            <option>O-</option>
+                                            <option>AB+</option>
+                                            <option>AB-</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label text-secondary small" data-i18n="blood_summary">BLOOD
+                                            REPORT SUMMARY</label>
+                                        <input type="text" id="rep-summary" class="form-control"
+                                            data-i18n="blood_summary" placeholder="e.g. Hb: 12, Sugar: 90">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-secondary small" data-i18n="injuries">INJURIES /
+                                        WOUNDS</label>
+                                    <textarea id="rep-injuries" class="form-control" rows="1" data-i18n="injuries"
+                                        placeholder="Describe injuries..."></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-secondary small"
+                                        data-i18n="allergies">ALLERGIES</label>
+                                    <textarea id="rep-allergies" class="form-control" rows="1" data-i18n="allergies"
+                                        placeholder="List allergies..."></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-secondary small" data-i18n="remarks">REMARKS</label>
+                                    <textarea id="rep-remarks" class="form-control" rows="1" data-i18n="remarks"
+                                        placeholder="Additional notes..."></textarea>
+                                </div>
+                                <button onclick="submitRecord('report')"
+                                    class="btn btn-info w-100 shadow-sm mt-2 text-white">
+                                    Save Detailed Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="liveToast" class="toast" role="alert">
+            <div class="toast-header">
+                <strong class="me-auto">System</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="toast-msg"></div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal fade" id="historyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Previous Medical Reports</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Blood</th>
+                                    <th>Details</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-history-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="translations.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            applyLanguage();
+        });
+
+        async function fetchPatient() {
+            const hid = document.getElementById('hid-search').value;
+            if (!hid) return;
+
+            try {
+                const res = await fetch('/doctor/get_patient', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ health_id: hid })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('p-name').innerText = data.name;
+                    document.getElementById('p-phone').innerText = data.phone;
+                    document.getElementById('p-lang').innerText = data.language;
+
+                    // Render history
+                    const list = document.getElementById('history-list');
+                    const modalBody = document.getElementById('modal-history-body');
+                    list.innerHTML = '';
+                    modalBody.innerHTML = '';
+
+                    if (data.history.length === 0) {
+                        list.innerHTML = '<div class="text-muted p-2">No previous records</div>';
+                    }
+
+                    // Pre-fill latest report
+                    // Find latest entry that has report fields
+                    const latestReport = data.history.find(h => h.blood_group || h.blood_summary);
+                    if (latestReport) {
+                        document.getElementById('rep-blood').value = latestReport.blood_group || '';
+                        document.getElementById('rep-summary').value = latestReport.blood_summary || '';
+                        document.getElementById('rep-injuries').value = latestReport.injuries || '';
+                        document.getElementById('rep-allergies').value = latestReport.allergies || '';
+                        document.getElementById('rep-remarks').value = latestReport.remarks || '';
+                    } else {
+                        // Reset if no history
+                        document.getElementById('rep-summary').value = '';
+                        document.getElementById('rep-injuries').value = '';
+                        document.getElementById('rep-allergies').value = '';
+                        document.getElementById('rep-remarks').value = '';
+                        document.getElementById('rep-blood').value = '';
+                    }
+
+                    data.history.forEach(h => {
+                        // Sidebar List
+                        list.innerHTML += `
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between">
+                                    <strong>${h.diagnosis || 'Medical Record'}</strong>
+                                    <span class="text-muted" style="font-size:0.8em">${h.created_at.split('T')[0]}</span>
+                                </div>
+                                <div class="text-muted small">${h.prescription || h.remarks || ''}</div>
+                            </div>
+                        `;
+
+                        // Modal List
+                        modalBody.innerHTML += `
+                            <tr>
+                                <td>${h.created_at.split('T')[0]}</td>
+                                <td>${h.blood_group || '-'}</td>
+                                <td>
+                                    ${h.blood_summary ? 'Summary: ' + h.blood_summary + '<br>' : ''}
+                                    ${h.injuries ? 'Injuries: ' + h.injuries + '<br>' : ''}
+                                    ${h.diagnosis ? 'Diag: ' + h.diagnosis : ''}
+                                </td>
+                                <td>
+                                    ${h.allergies ? '<span class="text-danger">Allergies: ' + h.allergies + '</span><br>' : ''}
+                                    ${h.remarks || h.prescription || '-'}
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    document.getElementById('patient-details').classList.remove('d-none');
+                    document.getElementById('hid').value = hid;
+                    document.getElementById('no-patient-alert').classList.add('d-none');
+                } else {
+                    showToast('patient_not_found', false); // Use translatable key
+                    document.getElementById('patient-details').classList.add('d-none');
+                }
+            } catch (e) {
+                showToast('conn_error', false);
+            }
+        }
+
+
+
+        async function submitRecord(type) {
+            const hid = document.getElementById('hid').value;
+            // Default fields
+            let diag = document.getElementById('diag').value;
+            let pres = document.getElementById('pres').value;
+            const date = document.getElementById('date').value;
+
+            let payload = {
+                health_id: hid,
+                next_visit: date,
+                diagnosis: diag,
+                prescription: pres
+            };
+
+            // If Report, use structured fields
+            if (type === 'report') {
+                payload.blood_group = document.getElementById('rep-blood').value;
+                payload.blood_summary = document.getElementById('rep-summary').value;
+                payload.injuries = document.getElementById('rep-injuries').value;
+                payload.allergies = document.getElementById('rep-allergies').value;
+                payload.remarks = document.getElementById('rep-remarks').value;
+                // Clear diag/pres for report type to avoid confusion in history list
+                payload.diagnosis = "Detailed Medical Report";
+                payload.prescription = "";
+            }
+
+            if (!hid) {
+                showToast('fill_all', false); // Key
+                return;
+            }
+
+            try {
+                const res = await fetch('/doctor/add_record', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    showToast('record_added', true);
+                    if (type === 'visit') {
+                        document.getElementById('diag').value = '';
+                        document.getElementById('pres').value = '';
+                    } else {
+                        // Keep values in report form to verify they updated, or clear them? 
+                        // User requirement: "No duplicate records for same update action" - wait, user says "Update Existing Report".
+                        // Usually better to refresh patient to see the new history entry.
+                    }
+                    fetchPatient();
+                } else {
+                    showToast('Error', false);
+                }
+            } catch (e) {
+                showToast('conn_error', false);
+            }
+        }
+
+        function showToast(key, isSuccess) {
+            const toastEl = document.getElementById('liveToast');
+            const toastBody = document.getElementById('toast-msg');
+            const t = translations[localStorage.getItem('userLang') || 'en'];
+
+            toastBody.innerText = t[key] || key;
+            toastBody.className = isSuccess ? 'toast-body text-success' : 'toast-body text-danger';
+
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+    </script>
 </body>
+
 </html>

@@ -1,25 +1,245 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <title>Worker Dashboard</title>
-  <link rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-</head>
-<body class="container mt-5">
-  <h3>My Notifications</h3>
-  <ul id="list" class="list-group"></ul>
+<html lang="en">
 
-<script>
-fetch("http://127.0.0.1:5000/worker/dashboard")
-.then(r=>r.json())
-.then(d=>{
-  d.notifications.forEach(n=>{
-    let li = document.createElement("li");
-    li.className = "list-group-item";
-    li.innerText = n.message;
-    list.appendChild(li);
-  });
-});
-</script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worker Dashboard - Health Care System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fc;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #f39c12 0%, #d35400 100%);
+        }
+
+        .navbar-brand,
+        .nav-link {
+            color: white !important;
+        }
+
+        .btn-outline-light {
+            border-color: white;
+            color: white;
+        }
+
+        .btn-outline-light:hover {
+            background: white;
+            color: #d35400;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            border-radius: 1rem;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            background: #fce4ec;
+            color: #e91e63;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .hid-card {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand navbar-light mb-4 shadow">
+        <div class="container">
+            <span class="navbar-brand fw-bold" data-i18n="welcome_worker">Worker Dashboard</span>
+            <div class="ms-auto">
+                <a href="/" class="btn btn-outline-light btn-sm px-4" data-i18n="logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row justify-content-center">
+
+            <!-- Health ID Card -->
+            <div class="col-lg-8 mb-4">
+                <div class="card hid-card">
+                    <div class="card-body text-center p-4">
+                        <h6 class="text-white-50 text-uppercase mb-2" data-i18n="your_hid">Your Health ID</h6>
+                        <h2 class="fw-bold font-monospace mb-0" id="hid-display">...</h2>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medical Report Summary -->
+            <div class="col-lg-8 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="m-0 font-weight-bold text-primary" data-i18n="report_summary">Medical Report Summary
+                        </h6>
+                        <small class="text-muted d-block mt-1" id="last-updated"></small>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-borderless mb-0">
+                                <tbody>
+                                    <tr>
+                                        <th class="text-secondary small w-50 pt-3" data-i18n="blood_group">BLOOD GROUP
+                                        </th>
+                                        <td class="pt-3 fw-bold" id="val-blood"></td>
+                                    </tr>
+                                    <tr class="border-top">
+                                        <th class="text-secondary small pt-3" data-i18n="blood_summary">BLOOD REPORT
+                                        </th>
+                                        <td class="pt-3 text-dark" id="val-summary"></td>
+                                    </tr>
+                                    <tr class="border-top">
+                                        <th class="text-secondary small pt-3" data-i18n="injuries">INJURIES</th>
+                                        <td class="pt-3 text-dark" id="val-injuries"></td>
+                                    </tr>
+                                    <tr class="border-top">
+                                        <th class="text-secondary small pt-3" data-i18n="allergies">ALLERGIES</th>
+                                        <td class="pt-3 text-danger" id="val-allergies"></td>
+                                    </tr>
+                                    <tr class="border-top">
+                                        <th class="text-secondary small pt-3" data-i18n="remarks">REMARKS</th>
+                                        <td class="pt-3 text-info" id="val-remarks"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications -->
+            <div class="col-lg-8">
+                <div class="d-flex align-items-center mb-4">
+                    <h4 class="mb-0 text-gray-800 fw-bold" data-i18n="my_notifications">My Notifications</h4>
+                    <span class="badge bg-danger rounded-pill ms-2" id="notif-count">0</span>
+                </div>
+
+                <div id="notification-list" class="vstack gap-3">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-warning" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="translations.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            applyLanguage();
+            loadDashboard();
+        });
+
+        async function loadDashboard() {
+            const t = translations[localStorage.getItem('userLang') || 'en'];
+            try {
+                const res = await fetch('/worker/dashboard');
+                if (res.ok) {
+                    const data = await res.json();
+
+                    // 1. Display Health ID
+                    document.getElementById('hid-display').innerText = data.health_id || 'N/A';
+
+                    // 2. Parse & Display Medical Report
+                    renderReport(data.medical_record, t);
+
+                    // 3. Render Notifications
+                    renderList(data.notifications, t);
+                } else {
+                    document.getElementById('notification-list').innerHTML =
+                        '<div class="alert alert-danger">Error loading dashboard</div>';
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function renderReport(record, t) {
+            // Default "NIL"
+            const nil = `<span class="badge bg-light text-secondary border">${t['nil_value']}</span>`;
+
+            const fields = {
+                blood: nil,
+                summary: nil,
+                injuries: nil,
+                allergies: nil,
+                remarks: nil
+            };
+
+            if (record) {
+                // Use structured fields if available, otherwise fallback to diagnosis/prescription (old records)
+                fields.blood = record.blood_group || nil;
+                fields.summary = record.blood_summary || (record.diagnosis && !record.blood_summary ? record.diagnosis : nil);
+                fields.injuries = record.injuries || nil;
+                fields.allergies = record.allergies || nil;
+                fields.remarks = record.remarks || (record.prescription && !record.remarks ? record.prescription : nil);
+
+                // Last Updated
+                const date = record.created_at ? record.created_at.split('T')[0] : '';
+                document.getElementById('last-updated').innerText = `${t['last_updated']}: ${date}`;
+            }
+
+            document.getElementById('val-blood').innerHTML = fields.blood;
+            document.getElementById('val-summary').innerHTML = fields.summary;
+            document.getElementById('val-injuries').innerHTML = fields.injuries;
+            document.getElementById('val-allergies').innerHTML = fields.allergies;
+            document.getElementById('val-remarks').innerHTML = fields.remarks;
+        }
+
+        function renderList(notifications, t) {
+            const list = document.getElementById('notification-list');
+            const count = document.getElementById('notif-count');
+            list.innerHTML = '';
+            count.innerText = notifications.length;
+
+            if (notifications.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-5 text-muted">
+                        <p class="mt-3" data-i18n="no_notifs">${t['no_notifs']}</p>
+                    </div>`;
+                return;
+            }
+
+            notifications.forEach(n => {
+                const item = document.createElement('div');
+                item.className = 'card';
+                item.innerHTML = `
+                    <div class="card-body d-flex align-items-center">
+                        <div class="notification-icon me-3">
+                            🔔
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-1 text-primary" data-i18n="doc_update">${t['doc_update']}</h6>
+                            <p class="mb-0 text-secondary">${n.message}</p>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+    </script>
 </body>
+
 </html>
