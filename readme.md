@@ -1,4 +1,4 @@
-# Health Care System
+# Health Care System(Med tech)
 
 A Flask-based Health Care System with Role-Based Access Control (Admin, Doctor, Worker).
 
